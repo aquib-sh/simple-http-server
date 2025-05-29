@@ -1,6 +1,5 @@
 import json
 import socket
-import os
 import startup
 
 from controllers.user_controller import UserController
@@ -25,7 +24,7 @@ class HttpServer:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         sock.bind((self.SERVER_HOST, self.SERVER_PORT))
-        sock.listen()
+        sock.listen(100)
         print("Server is listening on %s..." % self.SERVER_PORT)
         return sock
     
@@ -60,8 +59,7 @@ class HttpServer:
                 else:
                     response = responseBuilder.build(HttpStatus.OK, static_content_details.content, {"Content-Type":static_content_details.content_type})
     
-
-            elif parsed_request.method is HttpMethodType.GET:
+            else:
                 routine = self.controller_map.fetch_endpoint(parsed_request.path)
 
                 if routine is None:
@@ -73,10 +71,6 @@ class HttpServer:
 
 
             client_connection.sendall(response)
-
-            # Free up the connection
-            client_connection.close()
-
 
     def shutdown(self):
         self.sock.close()
