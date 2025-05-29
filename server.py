@@ -1,8 +1,9 @@
+import json
 import socket
 import os
-import sys
-import json
+import startup
 
+from controllers.user_controller import UserController
 from http_status import HttpStatus
 from request_parser import RequestParser, HttpMethodType
 from response_builder import HttpResponseBuilder
@@ -11,67 +12,23 @@ from response_builder import HttpResponseBuilder
 class HttpServer:
     def __init__(self):
         self.SERVER_HOST = '0.0.0.0'
-        self.SERVER_PORT = 8001
+        self.SERVER_PORT = 8000
         self.STATIC_DATA_FOLDER = 'static'
 
-        self.SUPPORTED_CONTENT_TYPES = self.__load_config('content_types.json')
+        self.SUPPORTED_CONTENT_TYPES = startup.get_supported_content_types() 
         self.sock = None
-
-
-    def __load_config(self, filename: str):
-        return json.load(open(filename))
-
+        self.controller_map = startup.build_controller_map()
+        self.static_content_provider = startup.get_static_content_provider()
 
     def build_server(self):
         """Build a socket of IPV4 and TCP."""
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         sock.bind((self.SERVER_HOST, self.SERVER_PORT))
-        sock.listen(1)
+        sock.listen()
         print("Server is listening on %s..." % self.SERVER_PORT)
         return sock
     
-
-    def resource_exists(self, resource: str) -> bool:
-        return os.path.exists(resource)
-    
-    
-    def build_resource_path(self, resource: str) -> str:
-        return os.path.join(self.STATIC_DATA_FOLDER, resource[1:])
-    
-    
-    def fetch_resource(self, full_resource_path: str) -> bytes | None:
-        """Fetches the content from the content from the resource and sends it as bytes."""
-    
-        fp = None
-    
-        fp = open(file=full_resource_path, mode='rb')
-    
-        content = fp.read()
-        fp.close()
-    
-        return content
-    
-    
-    def get_resource_content_type(self, resource) -> str | None:
-        """Gets the content type of resource."""
-    
-        file_format = ""
-    
-        i = len(resource)-1
-    
-        while ((c := resource[i]) != "."):
-            file_format = c + file_format 
-            i -= 1
-    
-        print(file_format)
-    
-        if file_format not in self.SUPPORTED_CONTENT_TYPES:
-            return None
-    
-        return self.SUPPORTED_CONTENT_TYPES[file_format]
-    
-        
     def run(self):
         """Accepts connections in a continous running"""
 
@@ -90,38 +47,39 @@ class HttpServer:
                 continue
 
             parsed_request = RequestParser.parse(request)
-            print(parsed_request)
-   
-            content = None
-            content_type = None
-    
-            # Handle get request
-            if parsed_request.method is HttpMethodType.GET:
-                full_resource_path = self.build_resource_path(parsed_request.path)
-    
-                if self.resource_exists(full_resource_path):
-                    content_type = self.get_resource_content_type(full_resource_path)
-                    content = self.fetch_resource(full_resource_path)
-    
-            headers = {}
+
             response = None
 
-            if not content:
-                headers["Content-Type"] = "application/text"
-                response = responseBuilder.build(HttpStatus.NOT_FOUND, "Resource Not Found")
+            # Handle get request for static content
+            if (parsed_request.path.startswith("/static") or parsed_request.path == "/favicon.ico") and parsed_request.method is HttpMethodType.GET:
+                static_content_details = self.static_content_provider\
+                                             .resolve(parsed_request.path.replace("/static", "", 1))
 
-            elif content_type:
-                headers["Content-Type"] = content_type
-                response = responseBuilder.build(HttpStatus.OK, content, headers)
+                if static_content_details is None:
+                    response = responseBuilder.build(HttpStatus.NOT_FOUND, "Resource Not Found")
+                else:
+                    response = responseBuilder.build(HttpStatus.OK, static_content_details.content, {"Content-Type":static_content_details.content_type})
     
+
+            elif parsed_request.method is HttpMethodType.GET:
+                routine = self.controller_map.fetch_endpoint(parsed_request.path)
+
+                if routine is None:
+                    response = responseBuilder.build(HttpStatus.NOT_FOUND, "Resource Not Found")
+                else:
+                    data = routine() 
+                    serialized_data = json.dumps(data)
+                    response = responseBuilder.build(HttpStatus.OK, serialized_data, {"Content-Type":"application/json"})
+
+
             client_connection.sendall(response)
-    
+
             # Free up the connection
             client_connection.close()
 
+
     def shutdown(self):
         self.sock.close()
-
 
 
 if __name__ == "__main__":

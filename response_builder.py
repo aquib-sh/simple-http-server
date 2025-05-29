@@ -1,3 +1,4 @@
+import json
 from http_status import StatusCode
 
 class HttpResponseBuilder:
