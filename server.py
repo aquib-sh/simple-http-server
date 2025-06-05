@@ -2,7 +2,6 @@ import json
 import socket
 import startup
 
-from controllers.user_controller import UserController
 from http_status import HttpStatus
 from request_parser import RequestParser, HttpMethodType
 from response_builder import HttpResponseBuilder
@@ -60,17 +59,25 @@ class HttpServer:
                     response = responseBuilder.build(HttpStatus.OK, static_content_details.content, {"Content-Type":static_content_details.content_type})
     
             else:
-                routine = self.controller_map.fetch_endpoint(parsed_request.path)
+                routine = self.controller_map.fetch_endpoint(parsed_request.path, parsed_request.method)
 
                 if routine is None:
                     response = responseBuilder.build(HttpStatus.NOT_FOUND, "Resource Not Found")
                 else:
-                    data = routine() 
-                    serialized_data = json.dumps(data)
-                    response = responseBuilder.build(HttpStatus.OK, serialized_data, {"Content-Type":"application/json"})
+                    # Handle the GET and POST method appropriately
+                    if parsed_request.method is HttpMethodType.GET:
+                        data = routine() 
+                        serialized_data = json.dumps(data)
+                        response = responseBuilder.build(HttpStatus.OK, serialized_data, {"Content-Type":"application/json"})
 
+                    elif parsed_request.method is HttpMethodType.POST:
+                        data = routine(parsed_request.payload)
+                        serialized_data = json.dumps(data)
+                        response = responseBuilder.build(HttpStatus.OK, serialized_data, {"Content-Type":"application/json"})
 
             client_connection.sendall(response)
+            client_connection.close()
+
 
     def shutdown(self):
         self.sock.close()

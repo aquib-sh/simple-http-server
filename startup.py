@@ -10,9 +10,6 @@ def get_static_content_provider() -> StaticContentProvider:
         content_types= get_supported_content_types() 
         )
 
-def load_config(filename: str):
-    return json.load(open(filename))
-
 def get_supported_content_types():
     return load_config('content_types.json')
 
