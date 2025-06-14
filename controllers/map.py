@@ -23,7 +23,7 @@ class ControllerMap:
         }
 
     def fetch_endpoint(self, key: str, method: HttpMethodType) -> Callable | None:
-        for endpoint in self.controller_map.get(key):
+        for endpoint in self.controller_map.get(key, []):
             if endpoint["method"] is method:
                 return endpoint["call"]
         return None
