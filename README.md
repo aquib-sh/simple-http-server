@@ -102,4 +102,4 @@ This project is licensed under the GNU General Public License v3.0 - see the [LI
 ## Acknowledgments
 
 - Built for educational purposes to understand HTTP server implementation
-- Inspired by various web frameworks and server implementations
+- Inspired by [Joao Ventura's blog](https://joaoventura.net/blog/2017/python-webserver/)
