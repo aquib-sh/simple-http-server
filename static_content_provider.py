@@ -44,8 +44,6 @@ class StaticContentProvider:
             file_format = c + file_format 
             i -= 1
     
-        print(file_format)
-    
         if file_format not in self.SUPPORTED_CONTENT_TYPES:
             return None
     

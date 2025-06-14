@@ -50,7 +50,9 @@ class HttpServer:
             response = None
 
             # Handle get request for static content
-            if (parsed_request.path.startswith("/static") or parsed_request.path == "/favicon.ico") and parsed_request.method is HttpMethodType.GET:
+            if (parsed_request.path.startswith("/static") or parsed_request.path == "/favicon.ico")\
+                    and parsed_request.method is HttpMethodType.GET:
+                
                 static_content_details = self.static_content_provider\
                                              .resolve(parsed_request.path.replace("/static", "", 1))
 
@@ -69,8 +71,8 @@ class HttpServer:
                     serialized_data = json.dumps(data)
                     response = responseBuilder.build(HttpStatus.OK, serialized_data, {"Content-Type":"application/json"})
 
-
             client_connection.sendall(response)
+            client_connection.close()
 
     def shutdown(self):
         self.sock.close()

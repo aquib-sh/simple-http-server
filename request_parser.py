@@ -2,7 +2,7 @@ import logging
 import json
 from enum import Enum
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 class HttpMethodType(Enum):
     GET = 1
