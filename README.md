@@ -12,6 +12,9 @@ A lightweight HTTP server implementation written from scratch in Python. This pr
 - Configurable content types
 - Error handling with appropriate HTTP status codes
 
+## Guide
+I have wrote a detailed [blog](https://aquib.sh/2025/06/http-server-from-scratch.html) on this incase if you interested in making this project from scratch with understanding 
+
 ## Project Structure
 
 ```
